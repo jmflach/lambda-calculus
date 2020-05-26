@@ -1,0 +1,236 @@
+let
+
+  ---------- COMBINADOR Y ----------
+
+
+  Y = \f. (\x. f (x x)) (\x. f (x x));
+
+  if     = \a.\b.\c.a b c;
+
+
+
+------------------------------------------------------------
+--------------- CODIFICAÇÃO DE SCOTT -----------------------
+------------------------------------------------------------
+
+---------------------- BOOLEANOS ---------------------------
+
+  -- Bool = True | False
+
+  true   = \t f. t;
+  false  = \t f. f;
+
+
+  not    = \b. if b false true;
+  and    = \a.\b. if a (if b true false) false;
+  or     = \a.\b. if a true b;
+
+---------------------- NATURAIS ----------------------------
+
+  -- Nat = Zero | Succ Nat
+  -- Zero : Nat
+  -- Succ : Nat -> Nat
+
+  zero   = \z s. z;
+  succ   = \n. \z s. s n;
+
+  um     = succ zero;
+  dois   = succ um;
+  tres   = succ dois;
+  quatro = succ tres;
+  cinco  = succ quatro;
+  seis   = succ cinco;
+  sete   = succ seis;
+  doze   = succ (succ (succ (succ (succ sete))));
+  treze  = succ doze;
+
+
+  -- Testes
+
+  isZero = \n. n true (\x. false);
+  isPos  = \n. n false (\x. true);
+
+  -- Projeções
+
+  --\z s. s n;
+  pred   = \n. n n (\x.x);
+
+
+---------------------- LISTAS ------------------------------
+
+  -- Lista = Empty | Cons X Lista
+  -- Empty : Lista
+  -- Cons  : X Lista -> Lista, onde X é o tipo dos elementos da lista
+
+  empty = \e c. e;
+  cons  = \h t. \e c. c h t;
+
+  isEmpty = \l. l true (\a b.false);
+  isCons  = \l. l false (\a b. true);
+
+  head  = \l. l X (\a b .a);
+  tail  = \l. l X (\a b .b);
+
+
+----------------------- LAÇO -------------------------------
+
+  repeat_joao = Y (\R.\n f x.
+  (
+    if (isZero n)
+      x
+      (f (R (pred n) f x))
+  ));
+
+  repeat_rodrigo = Y (\R.\n f x.
+  (
+    if (isZero n)
+      x
+      (R (pred n) f (f x))
+  ));
+
+  repeat = repeat_rodrigo;
+
+--------------------- ARITMÉTICA----------------------------
+
+  -- Dizia eu, que na aritmética...
+
+
+  --zero   = \z s. z;
+  --\z s. s n;
+
+  add  = \a.\b. (repeat a succ b);
+
+  mult = \a.\b. (repeat a (\x. add b x) zero);
+
+  -- interessante notar que (\x. add x b) não funciona
+
+
+  sub = \a.\b. (repeat b pred a);
+
+
+
+  -- geq a b = a >= b
+  geq = \a.\b. (isZero (sub b a));
+
+  -- gre a b = a > b
+  gre = \a.\b. not (isZero (sub a b));
+
+  -- leq a b = a <= b
+  leq = \a.\b. (isZero (sub a b));
+
+  -- less a b = a < b
+  less = \a.\b. not (isZero (sub b a));
+
+  -- eq a b = a =b
+  eq = \a.\b. (and (geq a b) (leq a b));
+
+
+
+  div = Y \R. \a.\b.
+  (
+    if (or (less a b) (eq b zero))
+      zero
+      (succ (R (sub a b) b))
+  );
+
+  mod = Y \R. \a.\b.
+  (
+    if (eq b zero)
+      ERRO
+      (if(less a b)
+        a
+        (R (sub a b) b))
+  );
+
+  is_div = \a.\b. (isZero (mod a b));
+
+  gen_list_n = Y \R. \n.
+  (
+    if (leq n um)
+      empty
+      (cons n (R (pred n)))
+  );
+
+  gen_list = \n. gen_list_n (pred n);
+
+  isPrime_lst_W = Y \R.\n.\l.
+  (
+    if (isEmpty l)
+      true
+      (if (is_div n (head l))
+        false
+        (R n (tail l))
+      )
+  );
+
+
+  isPrime_lst = \n. if (leq n um) false (isPrime_W n (gen_list n));
+
+
+  isPrime_n_W = Y \R.\n.\i.
+  (
+    if (geq i n)
+      true
+      (if (is_div n i)
+        false
+        (R n (succ i))
+      )
+  );
+
+  isPrime_n = \n.
+  (
+    if (leq n um)
+      false
+      (isPrime_i_W n dois)
+  );
+
+  -- testes:
+  -- (isPrime zero) -> false OK
+  -- (isPrime um) -> false OK
+  -- (isPrime dois) -> true OK
+  -- (isPrime tres) -> true OK
+  -- (isPrime quatro) -> false OK
+  -- (isPrime cinco) -> true OK
+  -- (isPrime seis) -> false OK
+  -- (isPrime sete) -> true OK
+
+  isPrime_i_W = Y \R.\n.\i.
+  (
+    if (gre (mult i i) n)
+      true
+      (if (is_div n i)
+        false
+        (R n (succ i))
+      )
+  );
+
+  isPrime_i = \n.
+  (
+    if (leq n um)
+      false
+      (isPrime_i_W n dois)
+  );
+
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+
+
+  -- div seis tres - 1448 passos
+
+  -- Definindo os números diretamente, sem succ
+
+  -- div seis tres - 1294 passos
+
+  -- Usando a minha versão do repeat:
+
+  -- div seis tres - 2585
+
+
+ -- repeat quatro succ zero - 128
+
+
+
+in
+
+ (isPrime_i sete)

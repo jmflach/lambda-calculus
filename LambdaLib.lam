@@ -1,0 +1,673 @@
+let
+
+------------------------------------------------------------
+------------------ TERMOS IMPORTANTES ----------------------
+------------------------------------------------------------
+
+-------------------------- OMEGA ---------------------------
+
+O = \f. (\x. x x) (\x. x x);
+
+
+---------------------- COMBINADOR Y ------------------------
+
+
+Y = \f. (\x. f (x x)) (\x. f (x x));
+
+
+
+------------------------------------------------------------
+----------------------- BOOLEANOS --------------------------
+------------------------------------------------------------
+
+-- Construtores
+
+true   = \a.\b.a;
+false  = \a.\b.b;
+
+-- Álgebra Booleana
+
+if     = \a.\b.\c.a b c;
+not    = \b. if b false true;
+and    = \a.\b. if a (if b true false) false;
+or     = \a.\b. if a true b;
+
+
+
+------------------------------------------------------------
+------------------ ESTRUTURAS DE DADOS ---------------------
+------------------------------------------------------------
+
+----------------------- PARES ------------------------------
+
+-- O par (a, b) é visto como \c. c a b
+
+-- Construtor
+par    = \a b. \c. c a b;
+
+-- Seletores
+first  = \p. p true;
+second = \p. p false;
+
+-- Função que, dado um par (a, b), retorna (a, b+1)
+-- \c. c a b -> \c. c a (succ b)
+
+succScn = \p. par (first p) (succ (second p));
+
+
+
+----------------------- LISTA ------------------------------
+
+-- Uma lista é:
+-- empty, ou
+-- cons x lista, onde x é um elemento da lista
+
+-- Construtores:
+
+empty = \x. true;
+
+cons = \a.\b. par a b;
+
+-- Operações:
+
+isEmpty = \l. l (\a b. false);
+head = \l. first l;
+tail = \l. second l;
+
+L = \R. \l. if (isEmpty l) 0 (succ (R (tail l)));
+
+len = Y L;
+
+append = Y \R. \l1.\l2.
+  (
+    if (isEmpty l1)
+      l2
+      (if (isEmpty l2)
+        l1
+        (cons (head l1) (R (tail l1) l2)))
+  );
+
+
+-- Exemplos:
+
+lista_vazia = empty;
+
+lista1 = cons 1 (cons 2 (cons 3 (cons 4 empty)));
+
+lista2 = cons 5 (cons 6 (cons 7 empty));
+
+
+------------------ ÁRVORE BINÁRIA --------------------------
+
+  -- Uma AB é:
+  -- null, ou
+  -- node n l r, onde n é um natural; l e r são ABs
+
+  -- um node vai ser algo do tipo: \c. c n l r
+
+  -- Construtores:
+
+  null = \x. true;
+  node = \n l r. \c. c n l r;
+
+  -- Operações:
+
+  -- Testes:
+
+  isNull = \t. t (\a b c. false);
+  isNode = \t. not (isNull t);
+
+  -- Seletores:
+
+  value = \t. t (\a b c. a);
+  leftTree = \t. t (\a b c. b);
+  rightTree = \t. t (\a b c. c);
+
+  -- Funções
+
+  nodeSum = Y \R. \t.
+  (
+    if (isNull t)
+      0
+      (add (value t) (add (R (leftTree t)) (R (rightTree t))))
+  );
+
+
+  -- Função auxiliar: max a b retorna o maior dos dois num
+  max = \a.\b. if (gre a b) a b;
+
+  treeHeight = Y \R. \t.
+  (
+    if (isNull t)
+      0
+      (succ (max (R (leftTree t)) (R (rightTree t)) ) )
+  );
+
+
+  AB_toList = Y \R.\t.
+  (
+    if (isNull t)
+      empty
+      (cons (value t) 
+            (append (R (leftTree t)) (R (rightTree t))))
+  );
+
+
+ -- TABP1 = \R.\t.
+ -- (
+ --  if (isNull t)
+ --    null
+ --    (node (value t)
+ --          (R (leftTree t))
+ --          (R (rightTree t)))
+ -- );
+
+  --TABP = \R.\t.\tabp.
+  --(
+  --  if (isNull t)
+  --    tabp
+  --    (R (leftTree t) (insertABP tabp (value t)))
+  --);
+
+  --toABP = Y TABP;
+
+
+  folha1 = node 1 null null;
+  folha2 = node 2 null null;
+  folha3 = node 3 null null;
+  folha4 = node 4 null null;
+  folha5 = node 5 null null;
+
+  nodo5 = node 3 null folha3;
+  nodo4 = node 5 folha2 nodo5;
+  nodo3 = node 6 nodo4 null;
+
+  nodo2 = node 9 folha4 folha5;
+  nodo1 = node 1 folha1 nodo3;
+
+  raiz = node 10 nodo1 nodo2;
+
+-- como fazer funções auto-referentes?
+
+
+------------------------------------------------------------
+--------------------- ARITMÉTICA ---------------------------
+------------------------------------------------------------
+
+-- Áritmética sobre os naturais
+
+------------------ OPERAÇÕES BÁSICAS -----------------------
+
+succ   = \n. \a.\b. a (n a b);
+
+add    = \n.\m. \a.\b.(n a (m a b));
+add2   = \n.\m. n succ m;
+
+mult   = \n.\m. \a.\b.(n (m a) b);
+mult2  = \n.\m. n (\x.add m x) 0;
+
+sqr   = \n. \a.\b. (n (n a) b);
+
+-- exp    = \n.\m. \a.\b. (n (n a) b);
+
+exp   = \n.\m. m n;
+
+exp2   = \n.\m. m (\x.mult n x) 1;
+
+-- temqver so copiei - sera que da pra pensar sintaticamente?
+
+shiftInc = \p. par (second p) (succ (second p));
+
+pred = \n. first (n shiftInc (par 0 0));
+
+sub = \n.\m. m pred n;
+
+
+----------------------- TESTES ----------------------------
+
+isZero = \n. n (\x. false) true;
+
+-- geq a b - a >= b
+geq = \a.\b. (isZero (sub b a));
+
+-- gre a b - a > b
+gre = \a.\b. not (isZero (sub a b));
+
+-- leq a b - a <= b
+leq = \a.\b. (isZero (sub a b));
+
+-- less a b - a < b
+less = \a.\b. not (isZero (sub b a));
+
+-- eq a b - a =b
+eq = \a.\b. (and (geq a b) (leq a b));
+
+
+----------------------- DIVISÃO ---------------------------
+
+D = \R. \a.\b.
+(
+  if (or (less a b) (eq b 0))
+    0
+    (succ (R (sub a b) b))
+);
+
+div = Y D;
+
+
+
+
+
+
+
+  insertABP = Y \R.\t.\n.
+  (
+    if (isNull t)
+      (node n null null)
+
+      (
+        if (leq n (value t))
+          (node (value t) (R (leftTree t) n) (rightTree t))
+          (node (value t) (leftTree t) (R (rightTree t) n))
+      )
+  );
+
+
+  list_toABP = Y \R.\l.
+  (
+    if (isEmpty l)
+      null
+      (insertABP (R (tail l)) (head l))
+  );
+
+
+  AB_toABP = \t. list_toABP(AB_toList t);
+
+
+
+------------------------------------------------------------
+---------------------- INTEIROS ----------------------------
+------------------------------------------------------------
+
+-- naturais: \f.\x.x, \f.\x. f x
+-- inteiros: \s.\f.\x. x, \s.\f.\x. f x, \s.\f.\x. s f x
+
+zero    = \s.\f.\x. x;
+
+um      = \s.\f.\x. f x;
+dois    = \s.\f.\x. f (f x);
+tres    = \s.\f.\x. f (f (f x));
+quatro  = \s.\f.\x. f (f (f (f x)));
+cinco   = \s.\f.\x. f (f (f (f (f x))));
+
+n_um      = \s.\f.\x. s (f x);
+n_dois    = \s.\f.\x. s (f (f x));
+n_tres    = \s.\f.\x. s (f (f (f x)));
+n_quatro  = \s.\f.\x. s (f (f (f (f x))));
+n_cinco   = \s.\f.\x. s (f (f (f (f (f x)))));
+
+
+-- teste de zero
+
+Z_isZero = \n. n (\x.x) (\x.false) true;
+
+-- teste de positivo
+
+Z_isNeg = \n. n (\x.true) (\x.false) false;
+Z_isPos = \n. n (\x.false) (\x.true) false;
+
+-- inverso / oposto
+
+Z_to_neg = \n.\s.\b.\c. s (n a b c);
+
+Z_to_pos = \n.\s.\y.\z. (n (\x.x) y z);
+
+Z_oposto = \n. if (Z_isZero n) n (if (Z_isPos n) (Z_to_neg n) (Z_to_pos n));
+
+-- soma
+-- vai ser mais complicado pq tem negativos
+-- são 4 possibilidades:
+-- pos pos - soma normal
+-- pos neg - sub
+-- neg pos - sub invertendo as entradas
+-- neg neg - soma normal, coloca sinal no fim
+
+-- pra definir a soma, preciso definir subtração
+-- pra definir subtração, preciso definir pred
+
+-- pred
+-- pred = \n. first (n shiftInc (par 0 0));
+-- shiftInc = \p. par (second p) (succ (second p));
+
+Z_succ_pos  = \n.\s.\a.\b. a (n s a b);
+
+Z_shiftInc = \p.par (second p) (Z_succ_pos (second p));
+
+Z_pred_pos = \n. first ((n a) Z_shiftInc (par zero zero));
+
+Z_succ = \n.
+  if (or (Z_isZero n) (Z_isPos n))
+      (Z_succ_pos n)
+      (Z_oposto (Z_pred_pos (Z_oposto n)));
+
+Z_add = \n.\m.
+      if (Z_isNeg n)
+
+          -- se n é negativo
+          (if (Z_isPos m)
+
+              -- se n é negativo e m positivo
+              ((m \x.x) Z_succ n)
+
+
+              -- se n é negativo e m também
+              (Z_oposto
+                  ( ((Z_oposto n) \x.x) Z_succ (Z_oposto m)) ))
+
+          -- se n é positivo
+          ((n \x.x) Z_succ m);
+
+-- multiplicação
+-- são 4 possibilidades:
+-- pos pos - mult modulo
+-- pos neg - neg mult modulo
+-- neg pos - neg mult modulo
+-- neg neg - mult modulo
+
+Z_mult_mod = \n.\m. \s.\a.\b.(n s (m s a) b);
+
+Z_mult = \n.\m.
+                if (Z_isPos n)
+                    (if (Z_isPos m)
+                        (Z_mult_mod n m) (Z_oposto (Z_mult_mod n (Z_oposto m))))
+                    (if (Z_isPos m)
+                        (Z_oposto (Z_mult_mod (Z_oposto n) m)) (Z_mult_mod (Z_oposto n) (Z_oposto m)));
+
+-- se o empty é beta equivalente ao true, como saber se um true não era na verdade um empty num passo anterior?
+
+
+
+------------------------------------------------------------
+---------------- FUNÇÕES DE ALTA ORDEM ---------------------
+------------------------------------------------------------
+
+---------------------------- MAP ---------------------------
+
+M = \R. \l.\f.
+    (if (isEmpty l)
+        empty
+        (cons (f (head l)) (R (tail l) f)));
+
+
+map = Y M;
+
+
+------------------------- FILTER ---------------------------
+
+F = \R. \l.\p.
+               (if (isEmpty l)
+
+                   empty
+
+                   (if (p (head l))
+
+                       (cons (head l) (R (tail l) p))
+
+                       (R (tail l) p)));
+
+filter = Y F;
+
+
+-------------------------- FOLD ---------------------------
+
+-- Irei implementar o fold com valor inicial
+
+F = \R. \l.\f.\i.
+(
+  if (isEmpty l)
+    i
+    (f (head l) (R (tail l) f i))
+);
+
+fold = Y F;
+
+
+ -----------------------------------------------------------
+ --------------------- EXERCÍCIOS --------------------------
+ -----------------------------------------------------------
+
+   -- Quádruplas
+   -- A quadrupla (a, b, x, y) é vista como um par de pares, ou seja, \a b x y c. c (\c. c a b) (\c. c x y)
+
+   -- Construtor
+   quad1  = \a b x y. par (par a b) (par x y);
+
+   -- Seletores
+   q1_1  = \q. q true true;
+   q1_2  = \q. q true false;
+   q1_3  = \q. q false true;
+   q1_4  = \q. q false false;
+
+
+   -- Quádruplas 2
+   -- A quadrupla (a, b, x, y) é vista como \a b x y c. c a b x y
+
+   -- Construtor
+   quad2  = \a b x y c. c a b x y;
+
+   -- Seletores
+   q2_1  = \q. q (\a b x y. a);
+   q2_2  = \q. q (\a b x y. b);
+   q2_3  = \q. q (\a b x y. x);
+   q2_4  = \q. q (\a b x y. y);
+
+
+   -- f(x) = x^3 + 5
+   -- f(0) = 5
+   -- f(1) = 6
+   -- f(2) = 13
+
+   f1 = \n. add (exp n 3) 5;
+
+   -- g(x,y) = x^y - 2
+   -- g(1,0) = 0
+   -- g(0,1) = 0
+   -- g(1,2) = 0
+   -- g(2,3) = 6
+
+  g1 = \n.\m. sub (m n) 2;
+
+   -- h(x,y)   =   3, se 2 <= x < y
+   --          =   1, caso contrário
+   -- h(0,0) = 1
+   -- h(0,5) = 1
+   -- h(2,0) = 1
+   -- h(3,0) = 1
+   -- h(2,2) = 1
+   -- h(2,3) = 3
+   -- h(3,2) = 1
+   -- h(3,5) = 3
+
+  h1 = \n.\m. (and (geq n 2) (gre m n)) 3 1;
+
+  -- fib = \n. if (isZero n) 0 (if (isOne n) 1 (add (fib (pred n)) (fib (pred (pred n)))));
+
+  -- funções auxiliares:
+
+  isOne = \n. and (not (isZero n))(isZero (pred n));
+
+
+  fib_r = \R. \n. if (isZero n) 0 (if (isOne n) 1 (add (R (pred n)) (R (pred (pred n)))));
+
+  fib = Y fib_r;
+
+  -- fact = \n. if (isZero n) 1 (mult n (fact (pred n)));
+
+  F = \R. \n. if (isZero n) 1 (mult n (R (pred n)));
+
+  fact = Y F;
+
+
+  F = \R. \n. if (isZero n) 1 (mult n (R (pred n)));
+
+  fact = Y F;
+
+
+
+  ----- Fatorial sem recursão -----
+  -- fact 4 = 4 * 3 * 2 * 1
+  --        = 1 * 2 * 3 * 4
+
+  -- fact =
+  --          for (i = 1..n)
+  --              mult (i )
+
+  --fact2 = \n. n mult B;
+
+
+
+
+
+  lista_teste = (cons 4 (cons 2 (cons 3 (cons 0 empty))));
+
+
+------------------------------------------------------------
+------------------- LISTA AVALIADA -------------------------
+------------------------------------------------------------
+
+  mod = Y \R. \a.\b.
+  (
+    if (eq b 0)
+      ERRO
+      (if (less a b)
+        a
+        (R (sub a b) b))
+  );
+
+  -- testes:
+  -- (mod 4 2) -> 0 OK
+  -- (mod 5 2) -> 1 OK
+  -- (mod 4 1) -> 0 OK
+  -- (mod 4 0) -> ERRO OK
+  -- (mod 5 6) -> 5 OK
+
+  is_div = \a.\b. (isZero (mod a b));
+
+  -- testes:
+  -- Obs: não funciona com zero
+  -- (is_div 4 5) -> false OK
+  -- (is_div 4 4) -> true OK
+  -- (is_div 4 3) -> false OK
+  -- (is_div 4 2) -> true OK
+  -- (is_div 4 1) -> true OK
+
+  gen_lst_n = Y \R. \n.
+    (
+    if (leq n 1)
+      empty
+      (cons n (R (pred n)))
+    );
+
+  gen_lst = \n. gen_lst_n (pred n);
+
+  -- testes:
+  -- (gen_lst 6) -> (5,4,3,2) OK
+  -- (gen_lst 4) -> (3,2) OK
+  -- (gen_lst 2) -> empty OK
+
+  isPrime_lst_W = Y \R.\n.\l.
+  (
+    if (isEmpty l)
+      true
+      (if (is_div n (head l))
+        false
+        (R n (tail l))
+      )
+  );
+
+  isPrime_lst = \n.
+  (
+    if (leq n 1)
+      false
+      (isPrime_lst_W n (gen_lst n))
+  );
+
+  -- testes:
+  -- (isPrime 0) -> false OK
+  -- (isPrime 1) -> false OK
+  -- (isPrime 2) -> true OK
+  -- (isPrime 3) -> true OK
+  -- (isPrime 4) -> false OK
+  -- (isPrime 5) -> true OK
+  -- (isPrime 6) -> false OK
+  -- (isPrime 7) -> true OK - 50K passos
+  -- (isPrime 12) -> false OK
+  -- (isPrime 13) -> true - parei em 600K passos
+
+
+  isPrime_n_W = Y \R.\n.\i.
+  (
+    if (geq i n)
+      true
+      (if (is_div n i)
+        false
+        (R n (succ i))
+      )
+  );
+
+  isPrime_n = \n.
+  (
+    if (leq n 1)
+      false
+      (isPrime_n_W n 2)
+  );
+
+  -- testes:
+  -- (isPrime 0) -> false OK
+  -- (isPrime 1) -> false OK
+  -- (isPrime 2) -> true OK
+  -- (isPrime 3) -> true OK
+  -- (isPrime 4) -> false OK
+  -- (isPrime 5) -> true OK
+  -- (isPrime 6) -> false OK
+  -- (isPrime 7) -> true OK - 7K passos
+  -- (isPrime 12) -> false OK
+  -- (isPrime 13) -> true OK 43K passos
+
+  isPrime_i_W = Y \R.\n.\i.
+  (
+    if (gre (exp i 2) n)
+      true
+      (if (is_div n i)
+        false
+        (R n (succ i))
+      )
+  );
+
+  isPrime_i = \n.
+  (
+    if (leq n 1)
+      false
+      (isPrime_i_W n 2)
+  );
+
+  -- testes:
+  -- (isPrime 0) -> false OK 
+  -- (isPrime 1) -> false OK
+  -- (isPrime 2) -> true OK
+  -- (isPrime 3) -> true OK
+  -- (isPrime 4) -> false OK
+  -- (isPrime 5) -> true OK
+  -- (isPrime 6) -> false OK
+  -- (isPrime 7) -> true OK - 2K passos
+  -- (isPrime 12) -> false OK
+  -- (isPrime 13) -> true OK - 13K passos
+
+
+  -- Seleciona qual função de primo usar
+  isPrime = isPrime_i;
+
+
+in
+
+(AB_toABP nodo2)
